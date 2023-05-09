@@ -58,6 +58,42 @@ namespace LicenseKey.Migrations
                     b.ToTable("ConfirmToken");
                 });
 
+            modelBuilder.Entity("LicenseKey.Models.ContactMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Room")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SendDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ContactMessage");
+                });
+
             modelBuilder.Entity("LicenseKey.Models.Feedback", b =>
                 {
                     b.Property<int>("Id")
@@ -83,6 +119,49 @@ namespace LicenseKey.Migrations
                     b.ToTable("Feedback");
                 });
 
+            modelBuilder.Entity("LicenseKey.Models.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<float>("AddOn")
+                        .HasColumnType("real");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<float>("Fee")
+                        .HasColumnType("real");
+
+                    b.Property<string>("ImagePublicIP")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhotoUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubCategory")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UploadAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Payment");
+                });
+
             modelBuilder.Entity("LicenseKey.Models.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -91,11 +170,21 @@ namespace LicenseKey.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("ImagePublicIP")
+                    b.Property<int>("AvaiUnit")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LicenseKeyTo")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImagePublicIP")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -103,11 +192,14 @@ namespace LicenseKey.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Name")
+                    b.Property<float>("Price")
+                        .HasColumnType("real");
+
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Total")
+                    b.Property<int>("TotalUnit")
                         .HasColumnType("int");
 
                     b.Property<int?>("UserTransactionId")
@@ -128,6 +220,9 @@ namespace LicenseKey.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<DateTime>("Birthday")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -135,8 +230,14 @@ namespace LicenseKey.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Encrypted")
+                    b.Property<string>("Gender")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImagePublicIP")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsVerified")
@@ -146,7 +247,15 @@ namespace LicenseKey.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PhotoUrl")
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PhoneNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -221,11 +330,9 @@ namespace LicenseKey.Migrations
 
             modelBuilder.Entity("LicenseKey.Models.Product", b =>
                 {
-                    b.HasOne("LicenseKey.Models.UserTransaction", "UserTransaction")
+                    b.HasOne("LicenseKey.Models.UserTransaction", null)
                         .WithMany("Product")
                         .HasForeignKey("UserTransactionId");
-
-                    b.Navigation("UserTransaction");
                 });
 
             modelBuilder.Entity("LicenseKey.Models.UserTransaction", b =>
@@ -239,8 +346,7 @@ namespace LicenseKey.Migrations
 
             modelBuilder.Entity("LicenseKey.Models.User", b =>
                 {
-                    b.Navigation("ConfirmToken")
-                        .IsRequired();
+                    b.Navigation("ConfirmToken");
                 });
 
             modelBuilder.Entity("LicenseKey.Models.UserTransaction", b =>

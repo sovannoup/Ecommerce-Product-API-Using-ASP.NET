@@ -1,7 +1,9 @@
-﻿using CloudinaryDotNet;
+﻿using AutoMapper;
+using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using LicenseKey.Controllers.Request.ProductRequest;
 using LicenseKey.Helpers;
+using LicenseKey.Helpers.Dto;
 using LicenseKey.Models;
 using LicenseKey.Repository;
 using Microsoft.Extensions.Options;
@@ -11,15 +13,15 @@ namespace LicenseKey.Services.ProductService
     public class ProductService : IProductService
     {
         private readonly ApplicationDbContext _applicationDbContext;
-        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly Cloudinary _cloudinaryDotNet;
 
-        public ProductService(ApplicationDbContext applicationDbContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, IOptions<CloudinarySettings> config)
+        public ProductService(ApplicationDbContext applicationDbContext, IConfiguration configuration, IMapper mapper , IOptions<CloudinarySettings> config)
         {
             _applicationDbContext = applicationDbContext;
             _configuration = configuration;
-            _webHostEnvironment = webHostEnvironment;
+            _mapper = mapper;
 
             var acc = new Account
             (
@@ -32,10 +34,6 @@ namespace LicenseKey.Services.ProductService
 
         public string DeleteProduct(int id)
         {
-            if(id == 0)
-            {
-                throw new Exception("ID is not found");
-            }
             Product? cur = _applicationDbContext.Product.FirstOrDefault(x => x.Id == id);
             if(cur == null)
             {
@@ -52,10 +50,16 @@ namespace LicenseKey.Services.ProductService
             return "success";
         }
 
-        public List<Product> GetAllProduct()
+        public List<Product> GetAllProduct(int page, string category)
         {
-            List<Product> result = _applicationDbContext.Product.ToList();
+            List<Product> result = _applicationDbContext.Product.Where(x => x.Category == category).Skip((page - 1) * 10).Take(10).ToList();
             return result;
+        }
+
+        public Product GetProductById(int id)
+        {
+            Product? product = _applicationDbContext.Product.FirstOrDefault(x => x.Id.Equals(id)) ?? throw new Exception("Product Not Found");
+            return product;
         }
 
         public async Task<Product> UpdateProduct(UploadProductRequest request)
@@ -64,15 +68,8 @@ namespace LicenseKey.Services.ProductService
             {
                 throw new ArgumentNullException(nameof(request));
             }
-            Product Product = _applicationDbContext.Product.FirstOrDefault(x => x.Name == request.Name);
-            if(Product == null)
-            {
-                throw new Exception("Product not found");
-            }
-            Product.Name= request.Name;
-            Product.Total= request.Total;
-            Product.LicenseKeyTo = request.LicenseKeyTo;
-            if(request?.LogoUrl?.Length > 0)
+            Product? Product = _applicationDbContext.Product.FirstOrDefault(x => x.Title == request.Name) ?? throw new Exception("Product not found");
+            if (request?.LogoUrl?.Length > 0)
             {
                 var deleteParam = new DeletionParams(Product.ImagePublicIP);
                 var deleted = _cloudinaryDotNet.Destroy(deleteParam);
@@ -89,28 +86,25 @@ namespace LicenseKey.Services.ProductService
             return Product;
         }
 
-        public async Task<string> UploadProduct(UploadProductRequest request)
+        public async Task<string> UploadProduct(ProductDto request)
         {
-            Product cur = _applicationDbContext.Product.FirstOrDefault(x => x.Name == request.Name);
-            if(cur != null)
+            Product? isProduct = _applicationDbContext.Product.FirstOrDefault(x => x.Title == request.Title);
+            if(isProduct != null)
             {
                 throw new Exception("Product exist!");
             }
             if (request?.LogoUrl?.Length > 0)
             {
                 ImageUploadResult result = await UploadImageToCloud(request.LogoUrl);
+                Product product = _mapper.Map<Product>(request);
 
-                Product Product = new
-                     (
-                         request.Name,
-                         result.Url.ToString(),
-                         result.PublicId.ToString(),
-                         request.Total,
-                         request.LicenseKeyTo
-                     );
-                _applicationDbContext.Add(Product);
+                product.LogoUrl = result.Url.ToString();
+                product.ImagePublicIP = result.PublicId.ToString();
+
+                _applicationDbContext.Add(product);
                 _applicationDbContext.SaveChanges();
             }
+            else { throw new AppException("No Image Found"); }
             return "Success";
 
 

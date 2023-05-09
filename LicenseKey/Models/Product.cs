@@ -11,26 +11,17 @@ namespace LicenseKey.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        [Required]
-        public string Name { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public float Price { get; set; }
         [JsonPropertyName("Image")]
-        [Required]
-        public string? LogoUrl { get; set; }
-        [Required]
-        public string ImagePublicIP { get; set; }
-        [Required]
-        public int Total { get; set; }
-        public UserTransaction? UserTransaction { get; set; }
-        [Required]
-        public List<string> LicenseKeyTo { get; set; }
+        public string LogoUrl { get; set; } = string.Empty;
+        public string ImagePublicIP { get; set; } = string.Empty;
+        public int TotalUnit { get; set; }
+        public int AvaiUnit { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public Product(string name, string logoUrl, string imagePublicIP, int total, List<string> LicenseKeyTo)
-        {
-            Name = name;
-            LogoUrl = logoUrl;
-            ImagePublicIP = imagePublicIP;
-            Total = total;
-            this.LicenseKeyTo = LicenseKeyTo;
-        }
     }
 }
+

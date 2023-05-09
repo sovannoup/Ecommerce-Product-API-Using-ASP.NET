@@ -36,7 +36,7 @@ namespace LicenseKey.Services.Transaction
                 ProductFromId = FromCur.Id,
                 ProductToId = ToCur.Id,
                 Message = req.Message ?? "",
-                UserId = user.Id
+                UserId = user?.Id
             };
             _applicationDbContext.UserTransaction.Add(userTran);
             _applicationDbContext.SaveChanges();

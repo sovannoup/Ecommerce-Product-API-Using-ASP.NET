@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\KDC\\Desktop\\Personal\\LicenseKey\\LicenseKey\\LicenseKey.csproj": {}
+    "C:\\Users\\KDC\\Desktop\\Personal\\Production\\LicenseKey\\LicenseKey\\LicenseKey.csproj": {}
   },
   "projects": {
-    "C:\\Users\\KDC\\Desktop\\Personal\\LicenseKey\\LicenseKey\\LicenseKey.csproj": {
+    "C:\\Users\\KDC\\Desktop\\Personal\\Production\\LicenseKey\\LicenseKey\\LicenseKey.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\KDC\\Desktop\\Personal\\LicenseKey\\LicenseKey\\LicenseKey.csproj",
+        "projectUniqueName": "C:\\Users\\KDC\\Desktop\\Personal\\Production\\LicenseKey\\LicenseKey\\LicenseKey.csproj",
         "projectName": "LicenseKey",
-        "projectPath": "C:\\Users\\KDC\\Desktop\\Personal\\LicenseKey\\LicenseKey\\LicenseKey.csproj",
+        "projectPath": "C:\\Users\\KDC\\Desktop\\Personal\\Production\\LicenseKey\\LicenseKey\\LicenseKey.csproj",
         "packagesPath": "C:\\Users\\KDC\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\KDC\\Desktop\\Personal\\LicenseKey\\LicenseKey\\obj\\",
+        "outputPath": "C:\\Users\\KDC\\Desktop\\Personal\\Production\\LicenseKey\\LicenseKey\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\KDC\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -40,6 +40,14 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "dependencies": {
+            "AutoMapper": {
+              "target": "Package",
+              "version": "[12.0.1, )"
+            },
+            "AutoMapper.Extensions.Microsoft.DependencyInjection": {
+              "target": "Package",
+              "version": "[12.0.0, )"
+            },
             "BCrypt.Net-Next": {
               "target": "Package",
               "version": "[4.0.3, )"
@@ -55,6 +63,10 @@
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[6.0.4, )"
+            },
+            "Microsoft.AspNetCore.SignalR.Common": {
+              "target": "Package",
+              "version": "[7.0.5, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
@@ -116,7 +128,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.101\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
         }
       }
     }

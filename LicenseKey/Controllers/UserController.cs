@@ -1,5 +1,6 @@
 ﻿using LicenseKey.Controllers.Request;
 using LicenseKey.Controllers.Response;
+using LicenseKey.Helpers.Dto;
 using LicenseKey.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,6 @@ namespace LicenseKey.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-
         private readonly IUserService _userService;
         public UserController(IUserService userService)
         {
@@ -19,14 +19,14 @@ namespace LicenseKey.Controllers
 
         [AllowAnonymous]
         [HttpPost]
-        public string Login(UserLoginRequest request)
+        public ResponseObj Login(UserLoginRequest request)
         {
             return _userService.Login(request);
         }
 
         [Authorize]
         [HttpGet]
-        public UserInfoResponse GetUser()
+        public UserDto GetUser()
         {
             string? auth = HttpContext.Request.Headers["Authorization"];
             return _userService.GetUser(auth);
@@ -34,7 +34,7 @@ namespace LicenseKey.Controllers
 
         [AllowAnonymous]
         [HttpPost]
-        public string CreateUser(CreateUserRequest user)
+        public Task<string> CreateUser([FromForm] CreateUserReq user)
         {
            return _userService.CreateUser(user);
         }
@@ -53,6 +53,7 @@ namespace LicenseKey.Controllers
             string? auth = HttpContext.Request.Headers["Authorization"];
             return _userService.DeleteUser(auth);
         }
+
         [AllowAnonymous]
         [HttpGet("token")]
         public string ConfirmEmail(string token)
@@ -61,7 +62,7 @@ namespace LicenseKey.Controllers
         }
         [AllowAnonymous]
         [HttpPost]
-        public Task<string> ForgetPassword(ForgetPasswordRequest req)
+        public string ForgetPassword(ForgetPasswordRequest req)
         {
             return _userService.ForgetPassword(req);
         }

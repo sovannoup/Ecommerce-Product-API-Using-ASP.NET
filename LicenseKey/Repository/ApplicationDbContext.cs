@@ -1,7 +1,5 @@
 ﻿using LicenseKey.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System.Reflection.Metadata;
 
 namespace LicenseKey.Repository
 {
@@ -13,23 +11,7 @@ namespace LicenseKey.Repository
         public virtual DbSet<UserTransaction> UserTransaction { get; set; }
         public virtual DbSet<Product> Product { get; set; }
         public virtual DbSet<Feedback> Feedback { get; set; }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Product>(x =>
-            {
-                x.HasKey(y => y.Id);
-                x.Property(y => y.LicenseKeyTo)
-                    .HasConversion(
-                        from => string.Join(":", from),
-                        to => string.IsNullOrEmpty(to) ? new List<string>() : to.Split(':', StringSplitOptions.RemoveEmptyEntries).ToList(),
-                        new ValueComparer<List<string>>(
-                            (c1, c2) => c1.SequenceEqual(c2),
-                            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
-                            c => c.ToList()
-                    )
-                );
-            });
-        }
+        public virtual DbSet<Payment> Payment { get; set; }
+        public virtual DbSet<ContactMessage> ContactMessage { get; set; }
     }
 }

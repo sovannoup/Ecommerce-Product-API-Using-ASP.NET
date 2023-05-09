@@ -11,28 +11,31 @@ namespace LicenseKey.Models
 
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Email address is not valid.")]
-        public string? Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Password is required.")]
         [DataType(DataType.Password)]
-        public string? Encrypted { get; set; }
+        public string? Password { get; set; }
 
-        public string? PhotoUrl { get; set; } = string.Empty;
+        public string? Image { get; set; } = string.Empty;
+        public string? ImagePublicIP { get; set; } = string.Empty;
+        [Required]
+        public int PhoneNumber { get; set; }
+        [Required]
+        public string Role { get; set; } = "USER";
+        [Required]
+        public string Gender { get; set; } = string.Empty;
+        [Required]
+        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:MM/dd/yyyy}")]
+        public DateTime Birthday { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public bool IsVerified { get; set; } = false;
 
-        public virtual ConfirmToken ConfirmToken { get; set; }
-        
-        public User(string email, string name, string encrypted)
-        {
-            Email = email;
-            Name = name;
-            Encrypted = encrypted;
-        }
+        public virtual ConfirmToken? ConfirmToken { get; set; }
     }
 }

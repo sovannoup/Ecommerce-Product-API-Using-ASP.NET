@@ -6,15 +6,15 @@ namespace LicenseKey.Controllers.Request
     {
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Email address is not valid.")]
-        public string? Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
-        public string? OldPassword { get; set; }
+        public string OldPassword { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
-        public string? NewPassword { get; set; }
+        public string NewPassword { get; set; } = string.Empty;
 
-        public string? Name { get; set;}
+        public string Name { get; set;} = string.Empty;
         public string? PhotoUrl { get; set; }
 
     }

@@ -1,17 +1,22 @@
-﻿using LicenseKey.Controllers.Request;
+﻿using AutoMapper;
+using CloudinaryDotNet.Actions;
+using CloudinaryDotNet;
+using LicenseKey.Controllers.Request;
 using LicenseKey.Controllers.Response;
+using LicenseKey.Helpers;
+using LicenseKey.Helpers.Dto;
 using LicenseKey.Models;
 using LicenseKey.Repository;
-using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
 using MimeKit.Text;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace LicenseKey.Services
 {
@@ -19,28 +24,39 @@ namespace LicenseKey.Services
     {
         private readonly ApplicationDbContext _applicationDbContext;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
+        private readonly Cloudinary _cloudinaryDotNet;
 
-        public UserService(ApplicationDbContext applicationDbContext, IConfiguration configuration)
+        public UserService(ApplicationDbContext applicationDbContext, IConfiguration configuration, IMapper mapper, IOptions<CloudinarySettings> config)
         {
             _applicationDbContext = applicationDbContext;
             _configuration = configuration;
+            _mapper = mapper;
+            var acc = new Account
+            (
+                config.Value.CloudName,
+                config.Value.ApiKey,
+                config.Value.ApiSecret
+            );
+            _cloudinaryDotNet = new Cloudinary(acc);
         }
 
-        public string Login(UserLoginRequest request)
+        public ResponseObj Login(UserLoginRequest request)
         {
             //auth failed - creds incorrect
             User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == request.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Encrypted))
-                return "Username or password is incorrect";
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+                throw new AppException("Username or password is incorrect");
 
             var token = CreateToken(user, 60);
 
-            if (token == null)
-            {
-                throw new UnauthorizedAccessException("Please Login");
-            }
-            return token;
+            ResponseObj obj = new();
+            obj.Result["token"] = token;
+            obj.Result["user"] = user;
+
+
+            return obj;
         }
 
         public string ChangePassword(string token, string password)
@@ -48,17 +64,14 @@ namespace LicenseKey.Services
             if (token == null)
                 throw new Exception("Token is required");
 
-            ConfirmToken? ct = _applicationDbContext.ConfirmToken.FirstOrDefault(x => x.ForgetVerify == token);
-
-            if(ct == null)
-                throw new Exception("Invalid link");
+            ConfirmToken? ct = _applicationDbContext.ConfirmToken.FirstOrDefault(x => x.ForgetVerify == token) ?? throw new Exception("Invalid link");
             string? email = VerifyToken(token);
 
-            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == email);
+            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == email) ?? throw new Exception("Invalid token");
             var salt = BCrypt.Net.BCrypt.GenerateSalt();
             var encrypted = BCrypt.Net.BCrypt.HashPassword(password, salt);
 
-            user.Encrypted = encrypted;
+            user.Password = encrypted;
             _applicationDbContext.Users.Update(user);
             ct.ForgetVerify = string.Empty;
             _applicationDbContext.ConfirmToken.Update(ct);
@@ -91,7 +104,7 @@ namespace LicenseKey.Services
             return "Success";
         }
 
-        public string CreateUser(CreateUserRequest req)
+        public async Task<string> CreateUser(CreateUserReq req)
         {
             User? isExist = _applicationDbContext.Users.FirstOrDefault(x => x.Email == req.Email );
             if (isExist != null) {
@@ -100,12 +113,20 @@ namespace LicenseKey.Services
 
             var salt = BCrypt.Net.BCrypt.GenerateSalt();
             var encrypted = BCrypt.Net.BCrypt.HashPassword(req.Password, salt);
-            User user = new(req.Email, req.Name, encrypted);
+
+            User user = _mapper.Map<User>(req);
+            user.Password = encrypted;
 
             string token = CreateToken(user, 15);
 
             ConfirmToken userToken = new(token);
             user.ConfirmToken = userToken;
+            if (req.Image?.Length > 0)
+            {
+                ImageUploadResult res = await UploadImageToCloud(req.Image);
+                user.Image = res.Url.ToString();
+                user.ImagePublicIP = res.PublicId.ToString();
+            }
 
             var result = _applicationDbContext.Users.Add(user);
             _applicationDbContext.SaveChanges();
@@ -117,41 +138,31 @@ namespace LicenseKey.Services
         {
             string[] token = auth.Split(" ");
             string email = VerifyToken(token[1]);
-            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == email);
-
-            if (user == null)
-                throw new Exception("User not found");
+            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == email) ?? throw new Exception("User not found");
             _applicationDbContext.Remove(user);
             _applicationDbContext.SaveChanges();
             return "success";
         }
 
-        public async Task<string> ForgetPassword(ForgetPasswordRequest req)
+        public string ForgetPassword(ForgetPasswordRequest req)
         {
-            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == req.Email);
-
-            if (user == null)
-                throw new Exception("User not found");
+            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == req.Email) ?? throw new Exception("User not found");
             string token = CreateToken(user, 15);
-            ConfirmToken? ct = _applicationDbContext.ConfirmToken.FirstOrDefault(x => x.UserId == user.Id);
-            if (ct == null)
-                throw new Exception();
+            ConfirmToken? ct = _applicationDbContext.ConfirmToken.FirstOrDefault(x => x.UserId == user.Id) ?? throw new Exception();
             ct.ForgetVerify = token;
-            await SendEmailAsync(user.Email , "Confirm Email", user.Name, token);
+            SendEmail(user.Email, "Confirm Email", user.Name, token);
             _applicationDbContext.ConfirmToken.Update(ct);
             _applicationDbContext.SaveChanges();
             return token;
         }
 
-        public UserInfoResponse GetUser(string auth)
+        public UserDto GetUser(string auth)
         {
             string[] token = auth.Split(" ");
             string email = VerifyToken(token[1]);
-            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == email);
-
-            if (user == null)
-                throw new Exception("User not found");
-            UserInfoResponse res = new(user.Email, user.Name, user.PhotoUrl, user.CreatedAt, user.IsVerified);
+            User? user = _applicationDbContext.Users.FirstOrDefault(x => x.Email == email) ?? throw new Exception("User not found");
+            UserDto res = _mapper.Map<UserDto>(user);
+            res.Password = "";
             return res;
         }
 
@@ -166,15 +177,15 @@ namespace LicenseKey.Services
 
             if (user == null)
                 return "User not found";
-            bool isCorrect = BCrypt.Net.BCrypt.Verify(req.OldPassword, user.Encrypted);
+            bool isCorrect = BCrypt.Net.BCrypt.Verify(req.OldPassword, user.Password);
             if (!isCorrect)
                 return "Wrong password";
             var salt = BCrypt.Net.BCrypt.GenerateSalt();
             var encrypted = BCrypt.Net.BCrypt.HashPassword(req.NewPassword, salt);
-            user.Encrypted = encrypted;
+            user.Password = encrypted;
             user.Email = req.Email;
             user.Name = req.Name;
-            user.PhotoUrl = req.PhotoUrl;
+            user.Image = req.PhotoUrl;
             _applicationDbContext.Update(user);
             _applicationDbContext.SaveChanges();
             return "Success";
@@ -182,7 +193,7 @@ namespace LicenseKey.Services
 
         private string CreateToken(User user, int expire_min)
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler tokenHandler = new();
             var tokenKey = Encoding.ASCII.GetBytes(_configuration["ConnectionStrings:JWT_Token"]);
             SecurityTokenDescriptor tokenDescriptor = new()
             {
@@ -234,7 +245,7 @@ namespace LicenseKey.Services
             }
         }
 
-        public async Task SendEmailAsync(string to, string subject, string name, string token)
+        public void SendEmail(string to, string subject, string name, string token)
         {
             var link = "https://localhost:7052/api/user/confirmemail/token?token=" + token;
 
@@ -251,8 +262,24 @@ namespace LicenseKey.Services
             smtp.Disconnect(true);
         }
 
+        public async Task<ImageUploadResult> UploadImageToCloud(IFormFile file)
+        {
+            var uploadResult = new ImageUploadResult();
+            if (file.Length > 0)
+            {
+                using var stream = file.OpenReadStream();
+                var uploadParams = new ImageUploadParams
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Transformation = new Transformation().Height(500).Width(500).Crop("fill").Gravity("face")
+                };
+                uploadResult = await _cloudinaryDotNet.UploadAsync(uploadParams);
+            }
+            Console.WriteLine(uploadResult.PublicId.ToString());
+            return uploadResult;
+        }
 
-        private String EmailTemplate(String name, String link)
+        private static String EmailTemplate(String name, String link)
         {
             return "<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;margin:0;color:#0b0c0c\">\n" +
                     "\n" +
